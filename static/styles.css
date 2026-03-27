@@ -121,6 +121,21 @@ button.secondary {
   color: #111827;
 }
 
+button.danger {
+  background: #dc2626;
+  border-color: #dc2626;
+  color: #ffffff;
+}
+
+button.danger:hover {
+  background: #b91c1c;
+  border-color: #b91c1c;
+}
+
+.hidden {
+  display: none !important;
+}
+
 button:disabled {
   opacity: 0.6;
   cursor: not-allowed;

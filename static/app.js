@@ -10,6 +10,7 @@ const STRINGS = {
     btnSave:          "Spara",
     btnClose:         "← Tillbaka",
     btnResetPrompts:  "Återställ standard",
+    btnStop:          "⏹ Stopp",
     headMessages:     "Meddelanden",
     headSummaryJson:  "Sammanfattning JSON",
     headProgress:     "Chattförlopp",
@@ -26,6 +27,7 @@ const STRINGS = {
     scanStep:         (n) => `Skannar till slut… steg ${n}`,
     scanDone:         (s) => `Klar: #${s.dialogue_id}, bearbetat ${s.processed_messages}/${s.total_messages}`,
     scanError:        (msg) => `Skanningsfel: ${msg}`,
+    scanStopped:      "Skanning stoppad.",
     promptsSaved:     "Promptar sparade.",
     shownFirst:       (n, total) => `Visar första ${n} av ${total} meddelanden.`,
     shownAll:         (n) => `Visar alla ${n} meddelanden.`,
@@ -53,6 +55,7 @@ const STRINGS = {
     btnSave:          "Сохранить",
     btnClose:         "← Назад",
     btnResetPrompts:  "Сбросить на дефолт",
+    btnStop:          "⏹ Стоп",
     headMessages:     "Сообщения",
     headSummaryJson:  "Summary JSON",
     headProgress:     "Прогресс по чатам",
@@ -68,6 +71,7 @@ const STRINGS = {
     scanStep:         (n) => `Сканирую диалог до конца… шаг ${n}`,
     scanDone:         (s) => `Готово: #${s.dialogue_id}, обработано ${s.processed_messages}/${s.total_messages}`,
     scanError:        (msg) => `Ошибка скана: ${msg}`,
+    scanStopped:      "Скан остановлен.",
     promptsSaved:     "Промпты сохранены.",
     shownFirst:       (n, total) => `Показаны первые ${n} из ${total} сообщений.`,
     shownAll:         (n) => `Показаны все ${n} сообщений.`,
@@ -95,6 +99,7 @@ const STRINGS = {
     btnSave:          "Save",
     btnClose:         "← Back",
     btnResetPrompts:  "Reset to default",
+    btnStop:          "⏹ Stop",
     headMessages:     "Messages",
     headSummaryJson:  "Summary JSON",
     headProgress:     "Chat progress",
@@ -111,6 +116,7 @@ const STRINGS = {
     scanStep:         (n) => `Scanning to end… step ${n}`,
     scanDone:         (s) => `Done: #${s.dialogue_id}, processed ${s.processed_messages}/${s.total_messages}`,
     scanError:        (msg) => `Scan error: ${msg}`,
+    scanStopped:      "Scan stopped.",
     promptsSaved:     "Prompts saved.",
     shownFirst:       (n, total) => `Showing first ${n} of ${total} messages.`,
     shownAll:         (n) => `Showing all ${n} messages.`,
@@ -180,6 +186,7 @@ const statusEl            = document.getElementById("status");
 const btnSummaryNext      = document.getElementById("btn-summary-next");
 const btnSummaryFull      = document.getElementById("btn-summary-full");
 const btnSummaryReset     = document.getElementById("btn-summary-reset");
+const btnScanStop         = document.getElementById("btn-scan-stop");
 const systemPromptEl      = null; // prompts are on prompts.php
 const userPromptEl        = null;
 const messagesMetaEl      = document.getElementById("messages-meta");
@@ -190,6 +197,7 @@ const promptsViewEl       = null;
 
 const MESSAGES_PREVIEW_LIMIT = 300;
 let isBusy = false;
+let scanCancelled = false;
 let dialogues = [];
 let activeDialogueId = null;
 let lastOverviewStates = [];
@@ -240,11 +248,15 @@ function setStatus(text, isError = false) {
   statusEl.style.color = isError ? "#b91c1c" : "#374151";
 }
 
-function setBusy(nextDisabled = true) {
+function setBusy(nextDisabled = true, isScanning = false) {
   isBusy = nextDisabled;
-  if (btnSummaryNext) btnSummaryNext.disabled = nextDisabled;
-  if (btnSummaryFull) btnSummaryFull.disabled = nextDisabled;
+  if (btnSummaryNext)  btnSummaryNext.disabled  = nextDisabled;
+  if (btnSummaryFull)  btnSummaryFull.disabled  = nextDisabled;
   if (btnSummaryReset) btnSummaryReset.disabled = nextDisabled;
+  if (btnScanStop) {
+    if (isScanning) btnScanStop.classList.remove("hidden");
+    else            btnScanStop.classList.add("hidden");
+  }
 }
 
 async function fetchJson(url, options = {}) {
@@ -553,10 +565,15 @@ if (btnSummaryNext) {
 if (btnSummaryFull) {
   btnSummaryFull.onclick = async () => {
     if (!activeDialogueId || isBusy) return;
-    setBusy(true);
+    scanCancelled = false;
+    setBusy(true, true);
     try {
       let iterations = 0;
       while (iterations < 5000) {
+        if (scanCancelled) {
+          setStatus(t("scanStopped"));
+          break;
+        }
         iterations++;
         setStatus(t("scanStep", iterations));
         const state = await fetchJson(`api/dialogues/${activeDialogueId}/summary/next`, {
@@ -574,8 +591,14 @@ if (btnSummaryFull) {
     } catch (error) {
       setStatus(t("scanError", error.message), true);
     } finally {
-      setBusy(false);
+      setBusy(false, false);
     }
+  };
+}
+
+if (btnScanStop) {
+  btnScanStop.onclick = () => {
+    scanCancelled = true;
   };
 }
 
