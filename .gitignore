@@ -1,0 +1,24 @@
+# Secrets & config
+.env
+
+# Data files (large, generated)
+data/dialogues.json
+data/summaries.json
+data/*.log
+data/*.err
+data/*.txt
+dialogs.duckdb
+dialogue_export.csv
+
+# Python
+__pycache__/
+*.py[cod]
+venv/
+*.egg-info/
+
+# Dev/deploy scripts (not part of the app)
+check_vps.py
+debug_index.py
+
+# Editor
+.cursor/

@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Dialogue Summaries</title>
+    <link rel="stylesheet" href="static/styles.css?v=36" />
+  </head>
+  <body>
+    <main class="layout">
+      <section class="main-column">
+        <div class="top-bar">
+          <h1 data-i18n="title"></h1>
+          <div class="lang-switcher">
+            <button id="btn-lang-sv" class="lang-btn" data-lang="sv">SV</button>
+            <button id="btn-lang-ru" class="lang-btn" data-lang="ru">RU</button>
+            <button id="btn-lang-en" class="lang-btn" data-lang="en">EN</button>
+          </div>
+        </div>
+
+        <div id="tabs" class="tabs"></div>
+
+        <section class="toolbar">
+          <button id="btn-summary-next" data-i18n="btnNext"></button>
+          <button id="btn-summary-full" data-i18n="btnFull"></button>
+          <button id="btn-summary-reset" class="secondary" data-i18n="btnReset"></button>
+          <a href="prompts.php" class="secondary" style="padding:8px 16px;border-radius:6px;border:1px solid #d1d5db;text-decoration:none;color:#374151;font-size:14px;" data-i18n="btnPrompts"></a>
+          <span id="status"></span>
+        </section>
+
+        <div id="main-view">
+          <div id="summary-facts" class="cards-above-chat"></div>
+
+          <section class="panel">
+            <h2 data-i18n="headMessages"></h2>
+            <p id="messages-meta" class="hint"></p>
+            <div id="messages" class="messages"></div>
+          </section>
+
+          <section class="panel">
+            <h2 data-i18n="headSummaryJson"></h2>
+            <pre id="summary" class="summary"></pre>
+          </section>
+        </div>
+      </section>
+    </main>
+
+    <script src="static/app.js?v=36"></script>
+  </body>
+</html>
