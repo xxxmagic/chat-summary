@@ -37,9 +37,8 @@ const STRINGS = {
     translating:      "",
     labelFemale:      "Female",
     labelMale:        "Male",
-    labelUser:        "User",
-    labelPersona:     "Persona",
-    catPersonal:      "Personlig",
+    labelUser:        "Klient",
+    labelPersona:     "Operatör",
     catRelationship:  "Relation",
     catWork:          "Arbete",
     catLifestyle:     "Livsstil",
@@ -81,8 +80,8 @@ const STRINGS = {
     translating:      "Перевод ещё не готов — отображается оригинал (sv).",
     labelFemale:      "Female",
     labelMale:        "Male",
-    labelUser:        "User",
-    labelPersona:     "Persona",
+    labelUser:        "Клиент",
+    labelPersona:     "Оператор",
     catPersonal:      "Personal",
     catRelationship:  "Relationship",
     catWork:          "Work",
@@ -126,8 +125,8 @@ const STRINGS = {
     translating:      "Translation not ready yet — showing original (sv).",
     labelFemale:      "Female",
     labelMale:        "Male",
-    labelUser:        "User",
-    labelPersona:     "Persona",
+    labelUser:        "Client",
+    labelPersona:     "Operator",
     catPersonal:      "Personal",
     catRelationship:  "Relationship",
     catWork:          "Work",
@@ -439,8 +438,8 @@ function renderSummaryFacts(summary) {
 
   const genderA = detectPersonGender(userData);
   const genderB = detectPersonGender(personaData);
-  const labelA = genderA === "female" ? t("labelFemale") : genderA === "male" ? t("labelMale") : t("labelUser");
-  const labelB = genderB === "female" ? t("labelFemale") : genderB === "male" ? t("labelMale") : t("labelPersona");
+  const labelA = t("labelUser");
+  const labelB = t("labelPersona");
 
   const facts = flattenSummaryFacts(summary);
   if (!facts.length) {
