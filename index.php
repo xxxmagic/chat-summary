@@ -222,15 +222,14 @@ function sanitizeScalar($val) {
 
 function sanitizeValue($val) {
     if (is_array($val) && array_keys($val) !== range(0, count($val)-1)) {
-        // associative = object
-        return sanitizeMapping($val, MAX_FIELDS);
+        return sanitizeMapping($val);
     }
     if (is_array($val)) {
-        // list
+        // list — dedupe and trim values, keep up to MAX_LIST items
         $out = []; $seen = [];
         foreach (array_slice($val, 0, MAX_LIST) as $item) {
             $n = sanitizeValue($item);
-            if ($n === null || $n === '' || $n === [] || $n === []) continue;
+            if ($n === null || $n === '' || $n === []) continue;
             $m = json_encode($n, JSON_UNESCAPED_UNICODE);
             if (in_array($m, $seen)) continue;
             $seen[] = $m;
@@ -241,21 +240,15 @@ function sanitizeValue($val) {
     return sanitizeScalar($val);
 }
 
-function sanitizeMapping($map, $maxFields, $category = null) {
-    $scored = [];
+function sanitizeMapping($map, $category = null) {
+    $out = [];
     foreach ($map as $k => $v) {
         $k = trim((string)$k);
         if (!$k) continue;
         $n = sanitizeValue($v);
         if ($n === null || $n === '' || $n === []) continue;
-        $score = keyImportance($category ?? '', $k) + valueImportance($n);
-        $scored[] = [$score, $k, $n];
-    }
-    usort($scored, function($a, $b) { return $b[0] <=> $a[0]; });
-    $out = [];
-    foreach ($scored as [$score, $k, $n]) {
-        if (count($out) >= $maxFields) break;
-        if ($score <= -5) continue;
+        // Drop only clearly empty/unknown values
+        if (is_string($n) && in_array(strtolower(trim($n)), ['','unknown','n/a','na','none','null','?','-','no info'])) continue;
         $out[$k] = $n;
     }
     return $out;
@@ -270,7 +263,7 @@ function applySummaryLimits($obj) {
         foreach ($cats as $cat) {
             $catIn = $personIn[$cat] ?? [];
             $result['users'][$person][$cat] = is_array($catIn)
-                ? sanitizeMapping($catIn, MAX_FIELDS, $cat)
+                ? sanitizeMapping($catIn, $cat)
                 : [];
         }
     }
@@ -287,14 +280,19 @@ $LANG_INSTRUCTIONS = [
 
 function defaultSystemPrompt() {
     $schema = json_encode(defaultSummary(), JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
-    return "You are an intelligence analyst building a factual profile of a person from a chat conversation.\n"
-        . "Your goal is NOT to summarize the conversation — your goal is to EXTRACT specific facts.\n\n"
+    return "You are an intelligence analyst building a cumulative factual profile from a chat conversation.\n"
+        . "You receive a PREVIOUS profile and NEW messages. Your job: MERGE new facts into the existing profile.\n\n"
         . "Return ONLY valid JSON with this exact schema:\n$schema\n\n"
         . "ROLES — strictly one person each:\n"
         . "- users.user = the CLIENT: the real person who initiated contact\n"
         . "- users.persona = the OPERATOR character: the person being played by the operator\n"
         . "Determine roles from context. Keep them strictly separate — never mix.\n\n"
-        . "WHAT TO LOOK FOR in each category:\n"
+        . "MERGING RULES — critical:\n"
+        . "- ALWAYS copy ALL fields from previous_summary into your response first\n"
+        . "- Then ADD or UPDATE fields based on new_messages\n"
+        . "- Only REMOVE a field if new_messages explicitly contradicts it\n"
+        . "- Never leave out existing facts just because new_messages didn't mention them\n\n"
+        . "WHAT TO EXTRACT from new_messages:\n"
         . "- identity: name, age, city, country, contact handles (phone, kik, telegram, email)\n"
         . "- work_money: job title, employer, income level, financial situation, debts\n"
         . "- lifestyle: living situation (alone/family), daily schedule, hobbies, interests\n"
@@ -302,10 +300,9 @@ function defaultSystemPrompt() {
         . "- sexual: expressed desires, preferences, boundaries, orientation\n"
         . "- personality: emotional state, communication style, red flags, manipulation tactics\n\n"
         . "Language: {lang}\n\n"
-        . "Rules:\n"
+        . "Other rules:\n"
         . "- Only record facts explicitly stated or strongly implied — no guessing.\n"
-        . "- Preserve existing facts unless directly contradicted.\n"
-        . "- Each category = max 1-2 concise facts. No long prose.\n"
+        . "- Each value: max " . MAX_VAL_LEN . " characters, concise.\n"
         . "- identity.gender must be a single word: female or male.\n"
         . "- Skip a category entirely if nothing is known — use empty object.\n"
         . "- Respond with pure JSON only.";
@@ -326,15 +323,6 @@ function callGrok($prevSummary, $newMessages, $systemPrompt, $userPrompt, $lang)
 
     $systemPrompt = str_replace('{lang}', $langInstr, $systemPrompt);
     $userPrompt   = str_replace('{lang}', $langInstr, $userPrompt);
-
-    $limitsNote = "\nHard limits — strictly enforce:\n"
-        . "- max " . MAX_FIELDS    . " fields per category\n"
-        . "- max " . MAX_LIST      . " items in any array\n"
-        . "- max " . MAX_VAL_LEN   . " chars per value\n"
-        . "- Each category = 1-2 line note only. Drop low-signal facts.";
-    if (strpos($systemPrompt, 'Hard limits') === false) {
-        $systemPrompt .= $limitsNote;
-    }
 
     $userPrompt = str_replace(
         ['{previous_summary}', '{new_messages}'],
