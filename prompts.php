@@ -135,13 +135,13 @@ function esc($s) { return htmlspecialchars($s, ENT_QUOTES, 'UTF-8'); }
     }
     .prompt-textarea {
       width: 100%; box-sizing: border-box;
-      min-height: 280px; padding: 18px 20px;
+      min-height: 120px; padding: 18px 20px;
       font-family: "JetBrains Mono","Fira Code","Cascadia Code","Consolas",monospace;
       font-size: 13.5px; line-height: 1.75; color: #111827;
       background: #ffffff; border: 1.5px solid #d1d5db;
-      border-radius: 10px; resize: vertical; outline: none;
+      border-radius: 10px; resize: none; outline: none; overflow: hidden;
+      transition: border-color .15s;
     }
-    .prompt-textarea--large { min-height: 560px; }
       transition: border-color .15s;
     }
     .prompt-textarea:focus { border-color: #1f2937; box-shadow: 0 0 0 3px rgba(31,41,55,.08); }
@@ -187,7 +187,7 @@ function esc($s) { return htmlspecialchars($s, ENT_QUOTES, 'UTF-8'); }
     <form method="POST">
       <div class="prompt-block">
         <label class="prompt-label" for="system_prompt"><?= esc(t('label_system')) ?></label>
-        <textarea id="system_prompt" name="system_prompt" class="prompt-textarea prompt-textarea--large"
+        <textarea id="system_prompt" name="system_prompt" class="prompt-textarea"
                   spellcheck="false"><?= esc($systemPrompt) ?></textarea>
         <p class="hint-code"><?= esc(t('hint_system')) ?></p>
       </div>
@@ -215,6 +215,16 @@ document.querySelectorAll('a[href^="?lang="]').forEach(a => {
     const l = new URLSearchParams(this.search).get('lang');
     if (l) document.cookie = 'chat_lang=' + l + '; path=/; max-age=' + (365*24*3600);
   });
+});
+
+// Auto-resize textareas to fit content (no scrollbar)
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = el.scrollHeight + 'px';
+}
+document.querySelectorAll('.prompt-textarea').forEach(function(ta) {
+  autoResize(ta);
+  ta.addEventListener('input', function() { autoResize(this); });
 });
 </script>
 </body>
