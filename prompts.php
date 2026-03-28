@@ -140,6 +140,8 @@ function esc($s) { return htmlspecialchars($s, ENT_QUOTES, 'UTF-8'); }
       font-size: 13.5px; line-height: 1.75; color: #111827;
       background: #ffffff; border: 1.5px solid #d1d5db;
       border-radius: 10px; resize: vertical; outline: none;
+    }
+    .prompt-textarea--large { min-height: 560px; }
       transition: border-color .15s;
     }
     .prompt-textarea:focus { border-color: #1f2937; box-shadow: 0 0 0 3px rgba(31,41,55,.08); }
@@ -185,7 +187,7 @@ function esc($s) { return htmlspecialchars($s, ENT_QUOTES, 'UTF-8'); }
     <form method="POST">
       <div class="prompt-block">
         <label class="prompt-label" for="system_prompt"><?= esc(t('label_system')) ?></label>
-        <textarea id="system_prompt" name="system_prompt" class="prompt-textarea"
+        <textarea id="system_prompt" name="system_prompt" class="prompt-textarea prompt-textarea--large"
                   spellcheck="false"><?= esc($systemPrompt) ?></textarea>
         <p class="hint-code"><?= esc(t('hint_system')) ?></p>
       </div>
