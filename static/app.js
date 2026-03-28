@@ -203,40 +203,39 @@ let lastOverviewStates = [];
 
 // ─── Default prompts ──────────────────────────────────────────────────────────
 
-const DEFAULT_SYSTEM_PROMPT = `You are building a cumulative factual profile from a chat conversation.
-You receive a PREVIOUS profile and NEW messages. Your job: MERGE new facts into the existing profile.
+const DEFAULT_SYSTEM_PROMPT = `You extract and maintain a factual profile of two chat participants: male and female.
 
-Return ONLY valid JSON with the exact schema provided in the system instructions.
+Return ONLY valid JSON matching this schema exactly:
+{ "male": { "identity":{}, "work_money":{}, "lifestyle":{}, "relationship":{}, "sexual":{}, "personality":{} },
+  "female": { "identity":{}, "work_money":{}, "lifestyle":{}, "relationship":{}, "sexual":{}, "personality":{} } }
 
-ROLES — determined by sender_gender field in each message:
-- sender_gender = "male"  → this is the CLIENT → extract into users.user
-- sender_gender = "female" → this is the OPERATOR → extract into users.persona
-Never mix. A phone number in a male message goes into users.user.identity.
+ROLE RULE — use sender_gender from each message:
+- sender_gender = "male"   → facts go into male.{category}
+- sender_gender = "female" → facts go into female.{category}
+Never put a male sender's facts into female, or vice versa.
 
-MERGING RULES:
-- Copy ALL existing fields from previous_summary into your response
-- Add or update fields from new_messages
-- Only remove a field if new_messages directly contradicts it
+MERGE RULE:
+- Start from previous_summary — keep ALL existing facts
+- Add or update facts found in new_messages
+- Remove a fact only if new_messages directly contradicts it
+- If a category has too many facts, keep only the most informative ones
 
-FORMAT — very important:
-- Each value must be 2-5 words MAX. Keyword style, no sentences.
-- Good: "Stockholm", "truck driver", "married, 2 kids", "prefers dominant"
-- Bad: "Magnus is a man who lives in Stockholm and works as a truck driver"
-- Max 60 characters per value — hard limit
-- Max 8 fields per category, max 4 items per list
+FORMAT:
+- Values: 2-5 words, keyword style. No sentences.
+- Good: "Stockholm", "truck driver", "076-6541199"
+- Bad: "He said he lives in Stockholm and drives trucks"
+- Max 60 chars per value
 
-WHAT TO EXTRACT:
-- identity: name, age, city, country, phone, kik, telegram, email
-- work_money: job, employer, income level, debts
-- lifestyle: lives alone/with family, hobbies
-- relationship: married/single, partner name, children
-- sexual: orientation, key preferences, limits
-- personality: mood, communication style, red flags
+CATEGORIES — what to extract:
+- identity: name, age, city, phone, kik, telegram, email
+- work_money: job, income, debts
+- lifestyle: living situation, hobbies
+- relationship: status, partner, children
+- sexual: orientation, preferences, limits
+- personality: mood, style, red flags
 
-Language: {lang}
-
-- identity.gender: single word only — female or male
-- Respond with pure JSON only.`;
+Language for values: {lang}
+Respond with pure JSON only.`;
 
 const DEFAULT_USER_PROMPT = `Extract and update profile facts from the new messages below.
 Focus on finding real facts about the client: family, work, location, finances, relationships.
@@ -438,22 +437,20 @@ function renderProfileCard(title, data) {
 
 function renderSummaryFacts(summary) {
   if (!summaryFactsEl) return;
-  const users = summary?.users || {};
-  const userData = users.user || {};
-  const personaData = users.persona || {};
+  const maleData   = summary?.male   || {};
+  const femaleData = summary?.female || {};
 
-  const genderA = detectPersonGender(userData);
-  const genderB = detectPersonGender(personaData);
   const labelA = t("labelUser")    + " ♂";
   const labelB = t("labelPersona") + " ♀";
 
-  const facts = flattenSummaryFacts(summary);
-  if (!facts.length) {
+  const hasData = Object.values(maleData).some(c => Object.keys(c).length) ||
+                  Object.values(femaleData).some(c => Object.keys(c).length);
+  if (!hasData) {
     summaryFactsEl.innerHTML = "";
     return;
   }
 
-  summaryFactsEl.innerHTML = renderProfileCard(labelA, userData) + renderProfileCard(labelB, personaData);
+  summaryFactsEl.innerHTML = renderProfileCard(labelA, maleData) + renderProfileCard(labelB, femaleData);
 }
 
 function renderSummaryOverview(states) {

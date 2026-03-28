@@ -107,7 +107,7 @@ function getMessages($dialogueId, $lang = 'sv') {
 function defaultSummary() {
     $cat = ['identity' => [], 'work_money' => [], 'lifestyle' => [],
             'relationship' => [], 'sexual' => [], 'personality' => []];
-    return ['users' => ['user' => $cat, 'persona' => $cat]];
+    return ['male' => $cat, 'female' => $cat];
 }
 
 function countFacts($node) {
@@ -255,16 +255,13 @@ function sanitizeMapping($map, $category = null) {
 }
 
 function applySummaryLimits($obj) {
-    $result  = defaultSummary();
-    $usersIn = $obj['users'] ?? [];
-    $cats    = ['identity','work_money','lifestyle','relationship','sexual','personality'];
-    foreach (['user','persona'] as $person) {
-        $personIn = $usersIn[$person] ?? [];
+    $result = defaultSummary();
+    $cats   = ['identity','work_money','lifestyle','relationship','sexual','personality'];
+    foreach (['male','female'] as $gender) {
+        $gIn = $obj[$gender] ?? [];
         foreach ($cats as $cat) {
-            $catIn = $personIn[$cat] ?? [];
-            $result['users'][$person][$cat] = is_array($catIn)
-                ? sanitizeMapping($catIn, $cat)
-                : [];
+            $catIn = $gIn[$cat] ?? [];
+            $result[$gender][$cat] = is_array($catIn) ? sanitizeMapping($catIn, $cat) : [];
         }
     }
     return $result;
@@ -280,34 +277,31 @@ $LANG_INSTRUCTIONS = [
 
 function defaultSystemPrompt() {
     $schema = json_encode(defaultSummary(), JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
-    return "You are building a cumulative factual profile from a chat conversation.\n"
-        . "You receive a PREVIOUS profile and NEW messages. Your job: MERGE new facts into the existing profile.\n\n"
-        . "Return ONLY valid JSON with this exact schema:\n$schema\n\n"
-        . "ROLES — determined by sender_gender field in each message:\n"
-        . "- sender_gender = \"male\"  → this is the CLIENT → extract into users.user\n"
-        . "- sender_gender = \"female\" → this is the OPERATOR → extract into users.persona\n"
-        . "Never mix. A phone number in a male message goes into users.user.identity.\n\n"
-        . "MERGING RULES:\n"
-        . "- Copy ALL existing fields from previous_summary into your response\n"
-        . "- Add or update fields from new_messages\n"
-        . "- Only remove a field if new_messages directly contradicts it\n\n"
-        . "FORMAT — very important:\n"
-        . "- Each value must be 2-5 words MAX. Keyword style, no sentences.\n"
-        . "- Good: \"Stockholm\", \"truck driver\", \"married, 2 kids\", \"prefers dominant\"\n"
-        . "- Bad: \"Magnus is a man who lives in Stockholm and works as a truck driver\"\n"
-        . "- Max " . MAX_VAL_LEN . " characters per value — hard limit\n"
-        . "- Max " . MAX_FIELDS . " fields per category\n"
-        . "- Max " . MAX_LIST . " items per list\n\n"
-        . "WHAT TO EXTRACT:\n"
-        . "- identity: name, age, city, country, phone, kik, telegram, email\n"
-        . "- work_money: job, employer, income level, debts\n"
-        . "- lifestyle: lives alone/with family, hobbies\n"
-        . "- relationship: married/single, partner name, children\n"
-        . "- sexual: orientation, key preferences, limits\n"
-        . "- personality: mood, communication style, red flags\n\n"
-        . "Language: {lang}\n\n"
-        . "- identity.gender: single word only — female or male\n"
-        . "- Respond with pure JSON only.";
+    return "You extract and maintain a factual profile of two chat participants: male and female.\n\n"
+        . "Return ONLY valid JSON matching this schema exactly:\n$schema\n\n"
+        . "ROLE RULE — use sender_gender from each message:\n"
+        . "- sender_gender = \"male\"   → facts go into male.{category}\n"
+        . "- sender_gender = \"female\" → facts go into female.{category}\n"
+        . "Never put a male sender's facts into female, or vice versa.\n\n"
+        . "MERGE RULE:\n"
+        . "- Start from previous_summary — keep ALL existing facts\n"
+        . "- Add or update facts found in new_messages\n"
+        . "- Remove a fact only if new_messages directly contradicts it\n"
+        . "- If a category has too many facts, keep only the most informative ones\n\n"
+        . "FORMAT:\n"
+        . "- Values: 2-5 words, keyword style. No sentences.\n"
+        . "- Good: \"Stockholm\", \"truck driver\", \"076-6541199\"\n"
+        . "- Bad: \"He said he lives in Stockholm and drives trucks\"\n"
+        . "- Max " . MAX_VAL_LEN . " chars per value\n\n"
+        . "CATEGORIES — what to extract:\n"
+        . "- identity: name, age, city, phone, kik, telegram, email\n"
+        . "- work_money: job, income, debts\n"
+        . "- lifestyle: living situation, hobbies\n"
+        . "- relationship: status, partner, children\n"
+        . "- sexual: orientation, preferences, limits\n"
+        . "- personality: mood, style, red flags\n\n"
+        . "Language for values: {lang}\n"
+        . "Respond with pure JSON only.";
 }
 
 function defaultUserPrompt() {
