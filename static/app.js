@@ -397,7 +397,8 @@ function makeOperatorNote(key, value) {
   if (SKIP_KEYS.has(lowered)) return "";
   if (typeof value === "boolean") return value ? humanizeToken(key) : "";
   const text = valueToText(value);
-  return text || "";
+  if (!text) return "";
+  return humanizeToken(key) + ": " + text;
 }
 
 function renderProfileCard(title, data) {
