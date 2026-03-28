@@ -17,9 +17,12 @@ You extract and maintain a factual profile of two chat participants: male and fe
 Return ONLY valid JSON matching this schema exactly:
 $schema
 
-ROLE RULE — use sender_gender from each message:
+ROLE RULE — use sender_gender to determine whose profile the facts belong to:
 - sender_gender = "male"   → facts go into male.{category}
 - sender_gender = "female" → facts go into female.{category}
+CRITICAL: Facts describe THE SENDER, not the recipient.
+Example: male writes "text me at 076-123" → male.identity.phone = "076-123"
+Example: female writes "my kik is ida99" → female.identity.kik = "ida99"
 Never put a male sender's facts into female, or vice versa.
 
 MERGE RULE:

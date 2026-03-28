@@ -35,10 +35,8 @@ const STRINGS = {
     noSummary:        "Inga sammanfattningsdata.",
     facts:            "fakta",
     translating:      "",
-    labelFemale:      "Female",
-    labelMale:        "Male",
-    labelUser:        "Klient",
-    labelPersona:     "Operatör",
+    labelFemale:      "Kvinna",
+    labelMale:        "Man",
     catRelationship:  "Relation",
     catWork:          "Arbete",
     catLifestyle:     "Livsstil",
@@ -78,10 +76,8 @@ const STRINGS = {
     noSummary:        "Нет данных по summary.",
     facts:            "факты",
     translating:      "Перевод ещё не готов — отображается оригинал (sv).",
-    labelFemale:      "Female",
-    labelMale:        "Male",
-    labelUser:        "Клиент",
-    labelPersona:     "Оператор",
+    labelFemale:      "Жен",
+    labelMale:        "Муж",
     catPersonal:      "Personal",
     catRelationship:  "Relationship",
     catWork:          "Work",
@@ -125,8 +121,6 @@ const STRINGS = {
     translating:      "Translation not ready yet — showing original (sv).",
     labelFemale:      "Female",
     labelMale:        "Male",
-    labelUser:        "Client",
-    labelPersona:     "Operator",
     catPersonal:      "Personal",
     catRelationship:  "Relationship",
     catWork:          "Work",
@@ -395,8 +389,8 @@ function renderSummaryFacts(summary) {
   const maleData   = summary?.male   || {};
   const femaleData = summary?.female || {};
 
-  const labelA = t("labelUser")    + " ♂";
-  const labelB = t("labelPersona") + " ♀";
+  const labelA = t("labelMale")   + " ♂";
+  const labelB = t("labelFemale") + " ♀";
 
   const hasData = Object.values(maleData).some(c => Object.keys(c).length) ||
                   Object.values(femaleData).some(c => Object.keys(c).length);
