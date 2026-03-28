@@ -438,8 +438,8 @@ function renderSummaryFacts(summary) {
 
   const genderA = detectPersonGender(userData);
   const genderB = detectPersonGender(personaData);
-  const labelA = t("labelUser");
-  const labelB = t("labelPersona");
+  const labelA = t("labelUser")    + " ♂";
+  const labelB = t("labelPersona") + " ♀";
 
   const facts = flattenSummaryFacts(summary);
   if (!facts.length) {
