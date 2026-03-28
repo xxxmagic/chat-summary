@@ -2,6 +2,7 @@
 // ─── Config ───────────────────────────────────────────────────────────────────
 
 session_start();
+require_once __DIR__ . '/prompts_config.php';
 
 function loadEnv($path) {
     if (!file_exists($path)) return;
@@ -104,11 +105,6 @@ function getMessages($dialogueId, $lang = 'sv') {
 
 // ─── Summaries (session-only, no disk writes) ─────────────────────────────────
 
-function defaultSummary() {
-    $cat = ['identity' => [], 'work_money' => [], 'lifestyle' => [],
-            'relationship' => [], 'sexual' => [], 'personality' => []];
-    return ['male' => $cat, 'female' => $cat];
-}
 
 function countFacts($node) {
     if (is_array($node)) {
@@ -130,7 +126,7 @@ function getSummaryState($dialogueId) {
     $entry   = $_SESSION['summaries'][(string)$dialogueId] ?? null;
 
     if (!$entry) {
-        $summary = defaultSummary();
+        $summary = defaultSummarySchema();
         return [
             'dialogue_id'        => $dialogueId,
             'processed_messages' => 0,
@@ -142,7 +138,7 @@ function getSummaryState($dialogueId) {
         ];
     }
 
-    $summary   = $entry['summary'] ?? defaultSummary();
+    $summary   = $entry['summary'] ?? defaultSummarySchema();
     $processed = $entry['processed_messages'] ?? 0;
     return [
         'dialogue_id'        => $dialogueId,
@@ -255,7 +251,7 @@ function sanitizeMapping($map, $category = null) {
 }
 
 function applySummaryLimits($obj) {
-    $result = defaultSummary();
+    $result = defaultSummarySchema();
     $cats   = ['identity','work_money','lifestyle','relationship','sexual','personality'];
     foreach (['male','female'] as $gender) {
         $gIn = $obj[$gender] ?? [];
@@ -274,41 +270,6 @@ $LANG_INSTRUCTIONS = [
     'en' => 'Write all field VALUES in English.',
     'sv' => 'Write all field VALUES in Swedish.',
 ];
-
-function defaultSystemPrompt() {
-    $schema = json_encode(defaultSummary(), JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
-    return "You extract and maintain a factual profile of two chat participants: male and female.\n\n"
-        . "Return ONLY valid JSON matching this schema exactly:\n$schema\n\n"
-        . "ROLE RULE — use sender_gender from each message:\n"
-        . "- sender_gender = \"male\"   → facts go into male.{category}\n"
-        . "- sender_gender = \"female\" → facts go into female.{category}\n"
-        . "Never put a male sender's facts into female, or vice versa.\n\n"
-        . "MERGE RULE:\n"
-        . "- Start from previous_summary — keep ALL existing facts\n"
-        . "- Add or update facts found in new_messages\n"
-        . "- Remove a fact only if new_messages directly contradicts it\n"
-        . "- If a category has too many facts, keep only the most informative ones\n\n"
-        . "FORMAT:\n"
-        . "- Values: 2-5 words, keyword style. No sentences.\n"
-        . "- Good: \"Stockholm\", \"truck driver\", \"076-6541199\"\n"
-        . "- Bad: \"He said he lives in Stockholm and drives trucks\"\n"
-        . "- Max " . MAX_VAL_LEN . " chars per value\n\n"
-        . "CATEGORIES — what to extract:\n"
-        . "- identity: name, age, city, phone, kik, telegram, email\n"
-        . "- work_money: job, income, debts\n"
-        . "- lifestyle: living situation, hobbies\n"
-        . "- relationship: status, partner, children\n"
-        . "- sexual: orientation, preferences, limits\n"
-        . "- personality: mood, style, red flags\n\n"
-        . "Language for values: {lang}\n"
-        . "Respond with pure JSON only.";
-}
-
-function defaultUserPrompt() {
-    return "Extract and update profile facts from the new messages below.\n"
-        . "Focus on finding real facts about the client: family, work, location, finances, relationships.\n\n"
-        . "previous_summary:\n{previous_summary}\n\nnew_messages:\n{new_messages}";
-}
 
 // ─── Grok API ─────────────────────────────────────────────────────────────────
 
@@ -398,6 +359,14 @@ if ($uri === '/api/status' && $method === 'GET') {
     ]);
 }
 
+// GET /api/prompts/default
+if ($uri === '/api/prompts/default' && $method === 'GET') {
+    jsonOut([
+        'system' => defaultSystemPrompt(),
+        'user'   => defaultUserPrompt(),
+    ]);
+}
+
 // GET /api/dialogues
 if ($uri === '/api/dialogues' && $method === 'GET') {
     jsonOut(getDialogueList());
@@ -443,7 +412,7 @@ if (preg_match('#^/api/dialogues/(\d+)(/.*)?$#', $uri, $m)) {
 
     // POST /api/dialogues/{id}/summary/reset
     if ($sub === '/summary/reset' && $method === 'POST') {
-        saveSummaryState($dialogueId, 0, defaultSummary());
+        saveSummaryState($dialogueId, 0, defaultSummarySchema());
         jsonOut(getSummaryState($dialogueId));
     }
 

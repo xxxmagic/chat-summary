@@ -201,51 +201,6 @@ let dialogues = [];
 let activeDialogueId = null;
 let lastOverviewStates = [];
 
-// ─── Default prompts ──────────────────────────────────────────────────────────
-
-const DEFAULT_SYSTEM_PROMPT = `You extract and maintain a factual profile of two chat participants: male and female.
-
-Return ONLY valid JSON matching this schema exactly:
-{ "male": { "identity":{}, "work_money":{}, "lifestyle":{}, "relationship":{}, "sexual":{}, "personality":{} },
-  "female": { "identity":{}, "work_money":{}, "lifestyle":{}, "relationship":{}, "sexual":{}, "personality":{} } }
-
-ROLE RULE — use sender_gender from each message:
-- sender_gender = "male"   → facts go into male.{category}
-- sender_gender = "female" → facts go into female.{category}
-Never put a male sender's facts into female, or vice versa.
-
-MERGE RULE:
-- Start from previous_summary — keep ALL existing facts
-- Add or update facts found in new_messages
-- Remove a fact only if new_messages directly contradicts it
-- If a category has too many facts, keep only the most informative ones
-
-FORMAT:
-- Values: 2-5 words, keyword style. No sentences.
-- Good: "Stockholm", "truck driver", "076-6541199"
-- Bad: "He said he lives in Stockholm and drives trucks"
-- Max 60 chars per value
-
-CATEGORIES — what to extract:
-- identity: name, age, city, phone, kik, telegram, email
-- work_money: job, income, debts
-- lifestyle: living situation, hobbies
-- relationship: status, partner, children
-- sexual: orientation, preferences, limits
-- personality: mood, style, red flags
-
-Language for values: {lang}
-Respond with pure JSON only.`;
-
-const DEFAULT_USER_PROMPT = `Extract and update profile facts from the new messages below.
-Focus on finding real facts about the client: family, work, location, finances, relationships.
-
-previous_summary:
-{previous_summary}
-
-new_messages:
-{new_messages}`;
-
 // ─── Utilities ────────────────────────────────────────────────────────────────
 
 function hasRequiredDom() {

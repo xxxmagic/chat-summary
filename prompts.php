@@ -1,5 +1,6 @@
 <?php
 session_start();
+require_once __DIR__ . '/prompts_config.php';
 
 // ─── Lang switching (must be before any output) ───────────────────────────────
 
@@ -68,44 +69,6 @@ $T = [
 function t($key) {
     global $T, $lang;
     return $T[$lang][$key] ?? $T['en'][$key] ?? $key;
-}
-
-// ─── Default prompts ──────────────────────────────────────────────────────────
-
-function defaultSystemPrompt() {
-    $cat    = ['identity' => [], 'work_money' => [], 'lifestyle' => [],
-               'relationship' => [], 'sexual' => [], 'personality' => []];
-    $schema = json_encode(['male' => $cat, 'female' => $cat],
-                          JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
-    return "You extract and maintain a factual profile of two chat participants: male and female.\n\n"
-        . "Return ONLY valid JSON matching this schema exactly:\n$schema\n\n"
-        . "ROLE RULE — use sender_gender from each message:\n"
-        . "- sender_gender = \"male\"   → facts go into male.{category}\n"
-        . "- sender_gender = \"female\" → facts go into female.{category}\n"
-        . "Never put a male sender's facts into female, or vice versa.\n\n"
-        . "MERGE RULE:\n"
-        . "- Start from previous_summary — keep ALL existing facts\n"
-        . "- Add or update facts found in new_messages\n"
-        . "- Remove a fact only if new_messages directly contradicts it\n"
-        . "- If a category has too many facts, keep only the most informative ones\n\n"
-        . "FORMAT:\n"
-        . "- Values: 2-5 words, keyword style. No sentences.\n"
-        . "- Good: \"Stockholm\", \"truck driver\", \"076-6541199\"\n"
-        . "- Bad: \"He said he lives in Stockholm and drives trucks\"\n"
-        . "- Max 60 chars per value\n\n"
-        . "CATEGORIES — what to extract:\n"
-        . "- identity: name, age, city, phone, kik, telegram, email\n"
-        . "- work_money: job, income, debts\n"
-        . "- lifestyle: living situation, hobbies\n"
-        . "- relationship: status, partner, children\n"
-        . "- sexual: orientation, preferences, limits\n"
-        . "- personality: mood, style, red flags\n\n"
-        . "Language for values: {lang}\n"
-        . "Respond with pure JSON only.";
-}
-
-function defaultUserPrompt() {
-    return "previous_summary:\n{previous_summary}\n\nnew_messages:\n{new_messages}";
 }
 
 $cookieOpts = ['expires' => time() + 30 * 24 * 3600, 'path' => '/'];
