@@ -208,6 +208,11 @@ You receive a PREVIOUS profile and NEW messages. Your job: MERGE new facts into 
 
 Return ONLY valid JSON with the exact schema provided in the system instructions.
 
+ROLES — determined by sender_gender field in each message:
+- sender_gender = "male"  → this is the CLIENT → extract into users.user
+- sender_gender = "female" → this is the OPERATOR → extract into users.persona
+Never mix. A phone number in a male message goes into users.user.identity.
+
 MERGING RULES:
 - Copy ALL existing fields from previous_summary into your response
 - Add or update fields from new_messages
