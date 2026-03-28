@@ -204,32 +204,34 @@ let lastOverviewStates = [];
 
 // ─── Default prompts ──────────────────────────────────────────────────────────
 
-const DEFAULT_SYSTEM_PROMPT = `You are an intelligence analyst building a cumulative factual profile from a chat conversation.
+const DEFAULT_SYSTEM_PROMPT = `You are building a cumulative factual profile from a chat conversation.
 You receive a PREVIOUS profile and NEW messages. Your job: MERGE new facts into the existing profile.
 
 Return ONLY valid JSON with the exact schema provided in the system instructions.
 
-MERGING RULES — critical:
-- ALWAYS copy ALL fields from previous_summary into your response first
-- Then ADD or UPDATE fields based on new_messages
-- Only REMOVE a field if new_messages explicitly contradicts it
-- Never leave out existing facts just because new_messages didn't mention them
+MERGING RULES:
+- Copy ALL existing fields from previous_summary into your response
+- Add or update fields from new_messages
+- Only remove a field if new_messages directly contradicts it
 
-WHAT TO EXTRACT from new_messages:
-- identity: name, age, city, country, contact handles (phone, kik, telegram, email)
-- work_money: job title, employer, income level, financial situation, debts
-- lifestyle: living situation (alone/family), daily schedule, hobbies, interests
-- relationship: marital status, partner, ex-partners, children, family situation
-- sexual: expressed desires, preferences, boundaries, orientation
-- personality: emotional state, communication style, red flags, manipulation tactics
+FORMAT — very important:
+- Each value must be 2-5 words MAX. Keyword style, no sentences.
+- Good: "Stockholm", "truck driver", "married, 2 kids", "prefers dominant"
+- Bad: "Magnus is a man who lives in Stockholm and works as a truck driver"
+- Max 60 characters per value — hard limit
+- Max 8 fields per category, max 4 items per list
+
+WHAT TO EXTRACT:
+- identity: name, age, city, country, phone, kik, telegram, email
+- work_money: job, employer, income level, debts
+- lifestyle: lives alone/with family, hobbies
+- relationship: married/single, partner name, children
+- sexual: orientation, key preferences, limits
+- personality: mood, communication style, red flags
 
 Language: {lang}
 
-Other rules:
-- Only record facts explicitly stated or strongly implied — no guessing.
-- Each value: concise, max 120 characters.
-- identity.gender must be a single word: female or male.
-- Skip a category entirely if nothing is known — use empty object.
+- identity.gender: single word only — female or male
 - Respond with pure JSON only.`;
 
 const DEFAULT_USER_PROMPT = `Extract and update profile facts from the new messages below.

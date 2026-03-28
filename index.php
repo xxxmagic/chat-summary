@@ -247,9 +247,9 @@ function sanitizeMapping($map, $category = null) {
         if (!$k) continue;
         $n = sanitizeValue($v);
         if ($n === null || $n === '' || $n === []) continue;
-        // Drop only clearly empty/unknown values
         if (is_string($n) && in_array(strtolower(trim($n)), ['','unknown','n/a','na','none','null','?','-','no info'])) continue;
         $out[$k] = $n;
+        if (count($out) >= MAX_FIELDS) break;
     }
     return $out;
 }
@@ -280,31 +280,32 @@ $LANG_INSTRUCTIONS = [
 
 function defaultSystemPrompt() {
     $schema = json_encode(defaultSummary(), JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
-    return "You are an intelligence analyst building a cumulative factual profile from a chat conversation.\n"
+    return "You are building a cumulative factual profile from a chat conversation.\n"
         . "You receive a PREVIOUS profile and NEW messages. Your job: MERGE new facts into the existing profile.\n\n"
         . "Return ONLY valid JSON with this exact schema:\n$schema\n\n"
         . "ROLES — strictly one person each:\n"
         . "- users.user = the CLIENT: the real person who initiated contact\n"
-        . "- users.persona = the OPERATOR character: the person being played by the operator\n"
-        . "Determine roles from context. Keep them strictly separate — never mix.\n\n"
-        . "MERGING RULES — critical:\n"
-        . "- ALWAYS copy ALL fields from previous_summary into your response first\n"
-        . "- Then ADD or UPDATE fields based on new_messages\n"
-        . "- Only REMOVE a field if new_messages explicitly contradicts it\n"
-        . "- Never leave out existing facts just because new_messages didn't mention them\n\n"
-        . "WHAT TO EXTRACT from new_messages:\n"
-        . "- identity: name, age, city, country, contact handles (phone, kik, telegram, email)\n"
-        . "- work_money: job title, employer, income level, financial situation, debts\n"
-        . "- lifestyle: living situation (alone/family), daily schedule, hobbies, interests\n"
-        . "- relationship: marital status, partner, ex-partners, children, family situation\n"
-        . "- sexual: expressed desires, preferences, boundaries, orientation\n"
-        . "- personality: emotional state, communication style, red flags, manipulation tactics\n\n"
+        . "- users.persona = the OPERATOR character: the person being played by the operator\n\n"
+        . "MERGING RULES:\n"
+        . "- Copy ALL existing fields from previous_summary into your response\n"
+        . "- Add or update fields from new_messages\n"
+        . "- Only remove a field if new_messages directly contradicts it\n\n"
+        . "FORMAT — very important:\n"
+        . "- Each value must be 2-5 words MAX. Keyword style, no sentences.\n"
+        . "- Good: \"Stockholm\", \"truck driver\", \"married, 2 kids\", \"prefers dominant\"\n"
+        . "- Bad: \"Magnus is a man who lives in Stockholm and works as a truck driver\"\n"
+        . "- Max " . MAX_VAL_LEN . " characters per value — hard limit\n"
+        . "- Max " . MAX_FIELDS . " fields per category\n"
+        . "- Max " . MAX_LIST . " items per list\n\n"
+        . "WHAT TO EXTRACT:\n"
+        . "- identity: name, age, city, country, phone, kik, telegram, email\n"
+        . "- work_money: job, employer, income level, debts\n"
+        . "- lifestyle: lives alone/with family, hobbies\n"
+        . "- relationship: married/single, partner name, children\n"
+        . "- sexual: orientation, key preferences, limits\n"
+        . "- personality: mood, communication style, red flags\n\n"
         . "Language: {lang}\n\n"
-        . "Other rules:\n"
-        . "- Only record facts explicitly stated or strongly implied — no guessing.\n"
-        . "- Each value: max " . MAX_VAL_LEN . " characters, concise.\n"
-        . "- identity.gender must be a single word: female or male.\n"
-        . "- Skip a category entirely if nothing is known — use empty object.\n"
+        . "- identity.gender: single word only — female or male\n"
         . "- Respond with pure JSON only.";
 }
 
